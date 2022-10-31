@@ -34,7 +34,7 @@ GLuint
 	matrRotlLocation,
 	codColLocation;
 
-int codCol, stopGame = false;
+int codCol, stopGame = false, isGameLost = false, isGameWon = false;
 float PI = 3.141592, angle = 0;
 float xCar2 = 0; float yCar2 = 0; 
 float width = 400, height = 200;
@@ -49,8 +49,76 @@ void draw() {
 	//glutCreateWindow("Game Over");
 }
 
+bool isCollisionWithCar1(int x, int y) {
+	return ((x >= 75 + iCar1 && x <= 155 + iCar1
+			 && y >= 34 && y <= 76)
+		|| (x >= 155 + iCar1 && x <= 183 + iCar1
+			&& y >= 41 && y <= 69));
+}
+
+bool isColissionBetweenCar2AndCar1() {
+	return isCollisionWithCar1(20 + iCar2 + xCar2, 40 + yCar2)
+		|| isCollisionWithCar1(20 + iCar2 + xCar2, 70 + yCar2)
+		|| isCollisionWithCar1(60 + iCar2 + xCar2, 40 + yCar2)
+		|| isCollisionWithCar1(60 + iCar2 + xCar2, 70 + yCar2);
+}
+
+bool isColissionWithBottomMargin(int y) {
+	return y < 0;
+}
+
+bool isColissionBetweenCar2AndBottomMargin() {
+	return isColissionWithBottomMargin(40 + yCar2);
+}
+
+bool isColissionWithUpperMargin(int y) {
+	return y > 200;
+}
+
+bool isColissionBetweenCar2AndUpperMargin() {
+	return isColissionWithUpperMargin(70 + yCar2);
+}
+
+bool isColissionWithLeftMargin(int x) {
+	return x < 0;
+}
+
+bool isColissionBetweenCar2AndLeftMargin() {
+	return isColissionWithLeftMargin(20 + iCar2 + xCar2);
+}
+
+bool isColissionWithUpperRightMargin(int x, int y) {
+	return y > 100 && x >= 400;
+}
+
+bool isColissionBetweenCar2AndUpperRightMargin() {
+	return isColissionWithUpperRightMargin(60 + iCar2 + xCar2, 70 + yCar2);
+}
+bool hasCar2Collision() {
+	return isColissionBetweenCar2AndCar1()
+		|| isColissionBetweenCar2AndBottomMargin()
+		|| isColissionBetweenCar2AndUpperMargin()
+		|| isColissionBetweenCar2AndLeftMargin()
+		|| isColissionBetweenCar2AndUpperRightMargin();
+}
+
+bool finishTheRoadOnTheRightLine(int x, int y) {
+	return x > 400 && y <= 100;
+}
+bool hasCar2WonTheGame() {
+	return finishTheRoadOnTheRightLine(20 + iCar2 + xCar2, 70 + yCar2);
+}
+
 void moveCarsByDefault(void) {
-	if (stopGame == false) {
+	if (hasCar2Collision()) {
+		isGameLost = true;
+	}
+
+	if (hasCar2WonTheGame()) {
+		isGameWon = true;
+	}
+
+	if (isGameLost == false && isGameWon == false) {
 		iCar1 += stepCar1;
 		iCar2 += stepCar2;
 	}
@@ -74,8 +142,7 @@ void processNormalKeys(unsigned char key, int x, int y)
 }
 void processSpecialKeys(int key, int xx, int yy) 
 {
-	int len;
-	if (stopGame == false) {
+	if (isGameLost == false && isGameWon == false) {
 		switch (key)
 		{
 		case GLUT_KEY_LEFT:
@@ -119,12 +186,6 @@ void CreateVBO(void)
 
 		340.0f, 100.0f, 0.0f, 1.0f,
 		390.0f, 100.0f, 0.0f, 1.0f,
-
-		// car 1
-		75.0f, 30.0f, 0.0f, 1.0f,
-		75.0f, 80.0f, 0.0f, 1.0f,
-		155.0f, 80.0f, 0.0f, 1.0f,
-		155.0f, 30.0f, 0.0f, 1.0f,
 
 		// car 2
 		20.0f, 40.0f, 0.0f, 1.0f,
@@ -180,6 +241,218 @@ void CreateVBO(void)
 		22.5f, 41.0f, 0.0f, 1.0f,
 		22.5f, 46.0f, 0.0f, 1.0f,
 		21.0f, 46.0f, 0.0f, 1.0f,
+
+		// car 1 tow
+		75.0f, 34.0f, 0.0f, 1.0f,
+		75.0f, 76.0f, 0.0f, 1.0f,
+		155.0f, 76.0f, 0.0f, 1.0f,
+		155.0f, 34.0f, 0.0f, 1.0f,
+
+		// car 1 front part
+		155.0f, 41.0f, 0.0f, 1.0f,
+		155.0f, 69.0f, 0.0, 1.0f,
+		183.0f, 69.0f, 0.0f, 1.0f,
+		183.0f, 41.0f, 0.0f, 1.0f,
+
+		// car 1 aprt between tow and front part
+		155.0f, 41.0f, 0.0f, 1.0f,
+		155.0f, 69.0f, 0.0f, 1.0f,
+		156.5f, 69.0f, 0.0f, 1.0f,
+		156.5f, 41.0f, 0.0f, 1.0f,
+
+		// car 1 windscreen
+		177.0f, 66.0f, 0.0f, 1.0f,
+		177.0f, 44.0f, 0.0f, 1.0f,
+		171.0f, 46.0f, 0.0f, 1.0f,
+		171.0f, 64.0f, 0.0f, 1.0f,
+
+		// car 1 top window
+		162.0f, 69.0f, 0.0f, 1.0f,
+		170.0f, 69.0f, 0.0f, 1.0f,
+		170.0f, 67.5f, 0.0f, 1.0f,
+		162.0f, 67.5f, 0.0f, 1.0f,
+
+		// car 1 down window
+		162.0f, 41.0f, 0.0f, 1.0f,
+		170.0f, 41.0f, 0.0f, 1.0f,
+		170.0f, 42.5f, 0.0f, 1.0f,
+		162.0f, 42.5f, 0.0f, 1.0f,
+
+		// car 1 top headight
+		182.0f, 68.0f, 0.0f, 1.0f,
+		182.0f, 63.0f, 0.0f, 1.0f,
+		180.5f, 63.0f, 0.0f, 1.0f,
+		180.5f, 68.0f, 0.0f, 1.0f,
+
+		// car 1 down headlight
+		182.0f, 42.0f, 0.0f, 1.0f,
+		182.0f, 47.0f, 0.0f, 1.0f,
+		180.5f, 47.0f, 0.0f, 1.0f,
+		180.5f, 42.0f, 0.0f, 1.0f,
+
+		// game over message
+		
+		// G
+		150.0f, 125.0f, 0.0f, 1.0f,
+		140.0f, 125.0f, 0.0f, 1.0f,
+
+		140.0f, 125.0f, 0.0f, 1.0f,
+		140.0f, 75.0f, 0.0f, 1.0f,
+
+		140.0f, 75.0f, 0.0f, 1.0f,
+		150.0f, 75.0f, 0.0f, 1.0f,
+
+		150.0f, 75.0f, 0.0f, 1.0f,
+		150.0f, 100.0f, 0.0f, 1.0f,
+
+		150.0f, 100.0f, 0.0f, 1.0f,
+		145.0f, 100.0f, 0.0f, 1.0f,
+
+		// A
+		155.0f, 75.0f, 0.0f, 1.0f,
+		160.0f, 125.0f, 0.0f, 1.0f,
+		
+		160.0f, 125.0f, 0.0f, 1.0f,
+		165.0f, 75.0f, 0.0f, 1.0f,
+
+		157.5f, 100.0f, 0.0f, 1.0f,
+		162.5f, 100.0f, 0.0f, 1.0f,
+
+		// M
+		170.0f, 75.0f, 0.0f, 1.0f,
+		170.0f, 125.0f, 0.0f, 1.0f,
+
+		170.0f, 125.0f, 0.0f, 1.0f,
+		175.0f, 100.0f, 0.0f, 1.0f,
+
+		175.0f, 100.0f, 0.0f, 1.0f,
+		180.0f, 125.0f, 0.0f, 1.0f,
+
+		180.0f, 125.0f, 0.0f, 1.0f,
+		180.0f, 75.0f, 0.0f, 1.0f,
+
+		// E 
+		195.0f, 125.0f, 0.0f, 1.0f,
+		185.0f, 125.0f, 0.0f, 1.0f,
+
+		185.0f, 125.0f, 0.0f, 1.0f,
+		185.0f, 75.0f, 0.0f, 1.0f,
+
+		185.0f, 75.0f, 0.0f, 1.0f,
+		195.0f, 75.0f, 0.0f, 1.0f,
+
+		185.0f, 100.0f, 0.0f, 1.0f,
+		195.0f, 100.0f, 0.0f, 1.0f,
+
+		// O
+		205.0f, 125.0f, 0.0f, 1.0f,
+		205.0f, 75.0f, 0.0f, 1.0f,
+
+		205.0f, 75.0f, 0.0f, 1.0f,
+		215.0f, 75.0f, 0.0f, 1.0f,
+
+		215.0f, 75.0f, 0.0f, 1.0f,
+		215.0f, 125.0f, 0.0f, 1.0f,
+
+		215.0f, 125.0f, 0.0f, 1.0f,
+		205.0f, 125.0f, 0.0f, 1.0f,
+
+		// V
+		220.0f, 125.0f, 0.0f, 1.0f,
+		225.0f, 75.0f, 0.0f, 1.0f,
+
+		225.0f, 75.0f, 0.0f, 1.0f,
+		230.0f, 125.0f, 0.0f, 1.0f,
+
+		// E
+		245.0f, 125.0f, 0.0f, 1.0f,
+		235.0f, 125.0f, 0.0f, 1.0f,
+
+		235.0f, 125.0f, 0.0f, 1.0f,
+		235.0f, 75.0f, 0.0f, 1.0f,
+
+		235.0f, 75.0f, 0.0f, 1.0f,
+		245.0f, 75.0f, 0.0f, 1.0f,
+
+		235.0f, 100.0f, 0.0f, 1.0f,
+		245.0f, 100.0f, 0.0f, 1.0f,
+
+		// R
+		250.0f, 75.0f, 0.0f, 1.0f,
+		250.0f, 125.0f, 0.0f, 1.0f,
+
+		250.0f, 125.0f, 0.0f, 1.0f,
+		260.0f, 125.0f, 0.0f, 1.0f,
+
+		260.0f, 125.0f, 0.0f, 1.0f,
+		260.0f, 100.0f, 0.0f, 1.0f,
+
+		260.0f, 100.0f, 0.0f, 1.0f,
+		250.0f, 100.0f, 0.0f, 1.0f,
+
+		250.0f, 100.0f, 0.0f, 1.0f,
+		260.0f, 75.0f, 0.0f, 1.0f,
+
+		// YOU WIN message
+		// Y
+		155.0f, 125.0f, 0.0f, 1.0f,
+		160.0f, 100.0f, 0.0f, 1.0f,
+
+		160.0f, 100.0f, 0.0f, 1.0f,
+		165.0f, 125.0f, 0.0f, 1.0f,
+
+		160.0f, 100.0f, 0.0f, 1.0f,
+		160.0f, 75.0f, 0.0f, 1.0f,
+
+		// O
+		170.0f, 125.0f, 0.0f, 1.0f,
+		170.0f, 75.0f, 0.0f, 1.0f,
+
+		170.0f, 75.0f, 0.0f, 1.0f,
+		180.0f, 75.0f, 0.0f, 1.0f,
+
+		180.0f, 75.0f, 0.0f, 1.0f,
+		180.0f, 125.0f, 0.0f, 1.0f,
+
+		180.0f, 125.0f, 0.0f, 1.0f,
+		170.0f, 125.0f, 0.0f, 1.0f,
+
+		// U
+		185.0f, 125.0f, 0.0f, 1.0f,
+		185.0f, 75.0f, 0.0f, 1.0f,
+
+		185.0f, 75.0f, 0.0f, 1.0f,
+		195.0f, 75.0f, 0.0f, 1.0f,
+
+		195.0f, 75.0f, 0.0f, 1.0f,
+		195.0f, 125.0f, 0.0f, 1.0f,
+
+		// W
+		205.0f, 125.0f, 0.0f, 1.0f,
+		207.5f, 75.0f, 0.0f, 1.0f,
+
+		207.5f, 75.0f, 0.0f, 1.0f,
+		210.0f, 125.0f, 0.0f, 1.0f,
+
+		210.0f, 125.0f, 0.0f, 1.0f,
+		212.5f, 75.0f, 0.0f, 1.0f,
+
+		212.5f, 75.0f, 0.0f, 1.0f,
+		215.0f, 125.0f, 0.0f, 1.0f,
+
+		// I
+		225.0f, 125.0f, 0.0f, 1.0f,
+		225.0f, 75.0f, 0.0f, 1.0f, 
+
+		// N
+		235.0f, 75.0f, 0.0f, 1.0f,
+		235.0f, 125.0f, 0.0f, 1.0f,
+
+		235.0f, 125.0f, 0.0f, 1.0f,
+		245.0f, 75.0f, 0.0f, 1.0f,
+
+		245.0f, 75.0f, 0.0f, 1.0f,
+		245.0f, 125.0f, 0.0f, 1.0f,
 
 		// car3
 
@@ -302,6 +575,7 @@ void RenderFunction(void)
 			glDrawArrays(GL_POINTS, 0, 4);
 			glDrawArrays(GL_LINES, 4, 4);*/
 
+
 	// Matricea pentru elementele care isi schimba pozitia
 	// car 1
 	//if (stopGame == false) {
@@ -309,7 +583,37 @@ void RenderFunction(void)
 		glUniformMatrix4fv(myMatrixLocation, 1, GL_FALSE, &myMatrix[0][0]);
 		codCol = 1;
 		glUniform1i(codColLocation, codCol);
-		glDrawArrays(GL_POLYGON, 12, 4);
+
+		// car 1 tow
+		glDrawArrays(GL_POLYGON, 48, 4);
+
+		// car 1 front part
+		glDrawArrays(GL_POLYGON, 52, 4);
+
+		// car 1 part between tow and front part
+		codCol = 4;
+		glUniform1i(codColLocation, codCol);
+		glDrawArrays(GL_POLYGON, 56, 4);
+
+		// car 1 windscreen
+		glDrawArrays(GL_POLYGON, 60, 4);
+
+		// car 1 top window
+		glDrawArrays(GL_POLYGON, 64, 4);
+
+		// car 1 down window
+		glDrawArrays(GL_POLYGON, 68, 4);
+
+		// car 1 top headlight
+		codCol = 5;
+		glUniform1i(codColLocation, codCol);
+		glDrawArrays(GL_POLYGON, 72, 4);
+
+		// car 1 down headlight
+		glDrawArrays(GL_POLYGON, 76, 4);
+
+		
+
 	//}
 	
 
@@ -318,37 +622,37 @@ void RenderFunction(void)
 	glUniformMatrix4fv(myMatrixLocation, 1, GL_FALSE, &myMatrix[0][0]);
 	codCol = 2;
 	glUniform1i(codColLocation, codCol);
-	glDrawArrays(GL_POLYGON, 16, 4);
+	glDrawArrays(GL_POLYGON, 12, 4);
 	codCol = 4;
 	glUniform1i(codColLocation, codCol);
 
 	//rear window
-	glDrawArrays(GL_POLYGON, 20, 4);
+	glDrawArrays(GL_POLYGON, 16, 4);
 
 	// windscreen
-	glDrawArrays(GL_POLYGON, 24, 4);
+	glDrawArrays(GL_POLYGON, 20, 4);
 
 	// top window
-	glDrawArrays(GL_POLYGON, 28, 4);
+	glDrawArrays(GL_POLYGON, 24, 4);
 
 	// down window
-	glDrawArrays(GL_POLYGON, 32, 4);
+	glDrawArrays(GL_POLYGON, 28, 4);
 
 	// top headlight
 	codCol = 5;
 	glUniform1i(codColLocation, codCol);
-	glDrawArrays(GL_POLYGON, 36, 4);
+	glDrawArrays(GL_POLYGON, 32, 4);
 
 	// down headlight
-	glDrawArrays(GL_POLYGON, 40, 4);
+	glDrawArrays(GL_POLYGON, 36, 4);
 
 	// top rear light
 	codCol = 6;
 	glUniform1i(codColLocation, codCol);
-	glDrawArrays(GL_POLYGON, 44, 4);
+	glDrawArrays(GL_POLYGON, 40, 4);
 
 	// down rear light
-	glDrawArrays(GL_POLYGON, 48, 4);
+	glDrawArrays(GL_POLYGON, 44, 4);
 
 			//myMatrix = resizeMatrix * matrTransl * matrRot;
 			//glUniformMatrix4fv(myMatrixLocation, 1, GL_FALSE, &myMatrix[0][0]);
@@ -362,7 +666,67 @@ void RenderFunction(void)
 			//glDrawArrays(GL_POINTS, 12, 1);
 			//glDisable(GL_POINT_SMOOTH);
 
+	// GAME OVER message
+	if (isGameLost == true) {
+		myMatrix = resizeMatrix;
+		glUniformMatrix4fv(myMatrixLocation, 1, GL_FALSE, &myMatrix[0][0]);
+		glLineWidth(5);
 
+		// G
+		codCol = 6;
+		glUniform1i(codColLocation, codCol);
+		glDrawArrays(GL_LINES, 80, 10);
+
+		// A
+		glDrawArrays(GL_LINES, 90, 6);
+
+		// M
+		glDrawArrays(GL_LINES, 96, 8);
+
+		// E
+		glDrawArrays(GL_LINES, 104, 8);
+
+		// O
+		glDrawArrays(GL_LINES, 112, 8);
+
+		// V
+		glDrawArrays(GL_LINES, 120, 4);
+
+		// E
+		glDrawArrays(GL_LINES, 124, 8);
+
+		// R
+		glDrawArrays(GL_LINES, 132, 10);
+	}
+
+	// YOU WIN message
+	if (isGameWon) {
+		myMatrix = resizeMatrix;
+		glUniformMatrix4fv(myMatrixLocation, 1, GL_FALSE, &myMatrix[0][0]);
+		codCol = 7;
+		glUniform1i(codColLocation, codCol);
+
+		glLineWidth(5);
+		// Y
+		glDrawArrays(GL_LINES, 142, 6);
+
+		// O
+		glDrawArrays(GL_LINES, 148, 8);
+
+		// U
+		glDrawArrays(GL_LINES, 156, 6);
+
+		// W
+		glDrawArrays(GL_LINES, 162, 8);
+
+		// I
+		glDrawArrays(GL_LINES, 170, 2);
+
+		// N
+		glDrawArrays(GL_LINES, 172, 6);
+	}
+	
+	
 	
 	glutSwapBuffers();
 	glFlush();

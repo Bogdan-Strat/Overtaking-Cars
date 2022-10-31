@@ -25,16 +25,20 @@ void main(void)
 		// middle of the road
 		out_Color = vec4 (1.0f, 1.0f, 1.0f, 1.0f);
 	case 4:
-		// car 2 - windows
+		// windows
 		out_Color = vec4 (0.24, 0.24, 0.24, 1.0);
 		break;
 	case 5:
-		// car 2 - headlights
+		// headlights
 		out_Color = vec4(0.98, 1.0, 0.65,  1.0);
 		break;
 	case 6:
-		// car 2 rear light
+		// rear lights
 		out_Color = vec4(0.99, 0.1, 0.1, 1.0);
+		break;
+	case 7:
+		// YOU WIN message
+		out_Color = vec4(1.0, 1.0, 0.0, 1.0);
 		break;
 	default:
 		break;
