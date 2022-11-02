@@ -127,10 +127,12 @@ bool hasCar2WonTheGame() {
 void moveCarsByDefault(void) {
 	if (hasCar2Collision()) {
 		isGameLost = true;
+		pauseSignal = true;
 	}
 
 	if (hasCar2WonTheGame()) {
 		isGameWon = true;
+		pauseSignal = true;
 	}
 
 	if (isGameLost == false && isGameWon == false && isGamePaused == false) {
@@ -165,10 +167,10 @@ void processNormalKeys(unsigned char key, int x, int y)
 		isGamePaused = false;
 		isSignalOn = false;
 		isSignalTurned = false;
+		pauseSignal = false;
 		break;
 	case 's':
 		isSignalOn = ~isSignalOn;
-		//isSignalTurned = true;
 		startTime = std::chrono::steady_clock::now();
 		break;
 	}
