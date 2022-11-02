@@ -40,6 +40,12 @@ void main(void)
 		// YOU WIN message
 		out_Color = vec4(1.0, 1.0, 0.0, 1.0);
 		break;
+	case 8:
+		// signal to overtake
+		out_Color = vec4(1.0, 0.65, 0.0, 1.0);
+	case 9:
+		// car color
+		out_Color = vec4(0.0, 0.75, 1.0, 1.0);
 	default:
 		break;
   };

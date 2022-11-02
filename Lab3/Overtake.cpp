@@ -11,6 +11,7 @@ Realizarea unei scene 2D in care obiectele se misca
 #include <iostream>
 #include <GL/glew.h> // glew apare inainte de freeglut
 #include <GL/freeglut.h> // nu trebuie uitat freeglut.h
+#include <chrono>
 
 #include "loadShaders.h"
 
@@ -34,20 +35,18 @@ GLuint
 	matrRotlLocation,
 	codColLocation;
 
-int codCol, stopGame = false, isGameLost = false, isGameWon = false;
+int codCol, stopGame = false, isGameLost = false, isGameWon = false, isGamePaused = false, isSignalTurned = false, isSignalOn = false, pauseSignal = false;
 float PI = 3.141592, angle = 0;
 float xCar2 = 0; float yCar2 = 0; 
 float width = 400, height = 200;
 float iCar1 = 0, stepCar1 = 0.0025;
 float iCar2 = 0, stepCar2 = 0.0025;
+float iCar3 = 0, stepCar3 = 0.0035;
+std::chrono::time_point<std::chrono::steady_clock> startTime, currentTime;
 glm::mat4 
-	myMatrix, resizeMatrix, matrTranslCar1, matrTranslCar2;
+	myMatrix, resizeMatrix, matrTranslCar1, matrTranslCar2,
+	matrRotCar3, matrPozitionareCar3, matrTranslCar3, matrTranslInitPosCar3, matrFixRotation3;
 
-void draw() {
-	//glutLeaveMainLoop();
-	//glutDestroyWindow(glutGetWindow());
-	//glutCreateWindow("Game Over");
-}
 
 bool isCollisionWithCar1(int x, int y) {
 	return ((x >= 75 + iCar1 && x <= 155 + iCar1
@@ -56,6 +55,10 @@ bool isCollisionWithCar1(int x, int y) {
 			&& y >= 41 && y <= 69));
 }
 
+bool isCollsionWithCar3(int x, int y) {
+	return (x >= 170 + iCar3 && x <= 210 + iCar3
+			&& y >= 125 && y <= 155);
+}
 bool isColissionBetweenCar2AndCar1() {
 	return isCollisionWithCar1(20 + iCar2 + xCar2, 40 + yCar2)
 		|| isCollisionWithCar1(20 + iCar2 + xCar2, 70 + yCar2)
@@ -63,6 +66,12 @@ bool isColissionBetweenCar2AndCar1() {
 		|| isCollisionWithCar1(60 + iCar2 + xCar2, 70 + yCar2);
 }
 
+bool isColissionBetweenCar2AndCar3() {
+	return isCollsionWithCar3(20 + iCar2 + xCar2, 40 + yCar2)
+		|| isCollsionWithCar3(20 + iCar2 + xCar2, 70 + yCar2)
+		|| isCollsionWithCar3(60 + iCar2 + xCar2, 40 + yCar2)
+		|| isCollsionWithCar3(60 + iCar2 + xCar2, 70 + yCar2);
+}
 bool isColissionWithBottomMargin(int y) {
 	return y < 0;
 }
@@ -91,11 +100,17 @@ bool isColissionWithUpperRightMargin(int x, int y) {
 	return y > 100 && x >= 400;
 }
 
+bool hasCar1Finished() {
+	return 183 + iCar1 >= 400;
+}
+
 bool isColissionBetweenCar2AndUpperRightMargin() {
 	return isColissionWithUpperRightMargin(60 + iCar2 + xCar2, 70 + yCar2);
 }
 bool hasCar2Collision() {
 	return isColissionBetweenCar2AndCar1()
+		|| isColissionBetweenCar2AndCar3()
+		|| hasCar1Finished()
 		|| isColissionBetweenCar2AndBottomMargin()
 		|| isColissionBetweenCar2AndUpperMargin()
 		|| isColissionBetweenCar2AndLeftMargin()
@@ -118,9 +133,10 @@ void moveCarsByDefault(void) {
 		isGameWon = true;
 	}
 
-	if (isGameLost == false && isGameWon == false) {
+	if (isGameLost == false && isGameWon == false && isGamePaused == false) {
 		iCar1 += stepCar1;
 		iCar2 += stepCar2;
+		iCar3 -= stepCar3;
 	}
 	
 	glutPostRedisplay();
@@ -130,19 +146,39 @@ void processNormalKeys(unsigned char key, int x, int y)
 {
 
 	switch (key) {
-	case 'l':
-		angle += 0.2f;
+	case 32:
+		// pause/resume
+		if (isGameLost == false && isGameLost == false) {
+			isGamePaused = ~isGamePaused;
+			pauseSignal = ~pauseSignal;
+		}
 		break;
 	case 'r':
-		angle -= 0.2f;
+		// reset
+		iCar1 = 0;
+		iCar2 = 0;
+		iCar3 = 0;
+		xCar2 = 0;
+		yCar2 = 0;
+		isGameWon = false;
+		isGameLost = false;
+		isGamePaused = false;
+		isSignalOn = false;
+		isSignalTurned = false;
+		break;
+	case 's':
+		isSignalOn = ~isSignalOn;
+		//isSignalTurned = true;
+		startTime = std::chrono::steady_clock::now();
 		break;
 	}
+	
 	if (key == 27)
 		exit(0);
 }
 void processSpecialKeys(int key, int xx, int yy) 
 {
-	if (isGameLost == false && isGameWon == false) {
+	if (isGameLost == false && isGameWon == false && isGamePaused == false) {
 		switch (key)
 		{
 		case GLUT_KEY_LEFT:
@@ -152,7 +188,6 @@ void processSpecialKeys(int key, int xx, int yy)
 			xCar2 += 5;
 			break;
 		case GLUT_KEY_UP:
-			//stopGame = true;
 			yCar2 += 5;
 			break;
 		case GLUT_KEY_DOWN:
@@ -455,6 +490,10 @@ void CreateVBO(void)
 		245.0f, 125.0f, 0.0f, 1.0f,
 
 		// car3
+		180.0f, 85.0f, 0.0f, 1.0f,
+		180.0f, 115.0f, 0.0f, 1.0f,
+		220.0f, 115.0f, 0.0f, 1.0f,
+		220.0f, 85.0f, 0.0f, 1.0f,
 
 
 
@@ -556,6 +595,13 @@ void RenderFunction(void)
 	//car 2
 	matrTranslCar2 = glm::translate(glm::mat4(1.0f), glm::vec3(iCar2 + xCar2, yCar2, 0.0));
 
+	// car 3
+	GLfloat angleCar3 = PI;
+	matrRotCar3 = glm::rotate(glm::mat4(1.0f), angleCar3, glm::vec3(0.0, 0.0, 1.0));
+	//matrTranslInainteRotCar3 = glm::translate(glm::mat4(1.0), glm::vec3(240.f, 200.f, 0.0));
+	matrTranslInitPosCar3 = glm::translate(glm::mat4(1.0f), glm::vec3(-10.f, 40.f, 0.0));
+	matrFixRotation3 = glm::translate(glm::mat4(1.0f), glm::vec3(240.f, 155.f, 0.0));
+	matrTranslCar3 = glm::translate(glm::mat4(1.0f), glm::vec3(iCar3, 0.0, 0.0));
 	glClear(GL_COLOR_BUFFER_BIT);
 	myMatrix = resizeMatrix;
 
@@ -568,13 +614,6 @@ void RenderFunction(void)
 	glUniform1i(codColLocation, codCol);
 	glLineWidth(20);
 	glDrawArrays(GL_LINES, 0, 12);
-	// Desenare puncte din colturi si axe
-			/*codCol = 0;
-			glUniform1i(codColLocation, codCol);
-			glPointSize(10.0);
-			glDrawArrays(GL_POINTS, 0, 4);
-			glDrawArrays(GL_LINES, 4, 4);*/
-
 
 	// Matricea pentru elementele care isi schimba pozitia
 	// car 1
@@ -613,12 +652,80 @@ void RenderFunction(void)
 		glDrawArrays(GL_POLYGON, 76, 4);
 
 		
-
-	//}
 	
 
 	// car 2 
 	myMatrix = resizeMatrix * matrTranslCar2;
+	glUniformMatrix4fv(myMatrixLocation, 1, GL_FALSE, &myMatrix[0][0]);
+	codCol = 9;
+	glUniform1i(codColLocation, codCol);
+	glDrawArrays(GL_POLYGON, 12, 4);
+	codCol = 4;
+	glUniform1i(codColLocation, codCol);
+
+	//rear window
+	glDrawArrays(GL_POLYGON, 16, 4);
+
+	// windscreen
+	glDrawArrays(GL_POLYGON, 20, 4);
+
+	// top window
+	glDrawArrays(GL_POLYGON, 24, 4);
+
+	// down window
+	glDrawArrays(GL_POLYGON, 28, 4);
+
+	// top headlight
+	codCol = 5;
+	glUniform1i(codColLocation, codCol);
+	if (isSignalTurned && pauseSignal == false) {
+		codCol = 2;
+		glUniform1i(codColLocation, codCol);
+	}
+	else {
+		codCol = 5;
+		glUniform1i(codColLocation, codCol);
+	}
+	if (isSignalOn && pauseSignal == false) {
+		currentTime = std::chrono::steady_clock::now();
+		if (std::chrono::duration_cast<std::chrono::seconds>(currentTime - startTime).count() >= 0.001) {
+			isSignalTurned = ~isSignalTurned;
+			startTime = currentTime;
+
+			if (isSignalTurned) {
+				codCol = 8;
+				glUniform1i(codColLocation, codCol);
+			}
+			else {
+				codCol = 5;
+				glUniform1i(codColLocation, codCol);
+			}
+		}
+		
+	}
+	else {
+		codCol = 5;
+		glUniform1i(codColLocation, codCol);
+	}
+	
+	glDrawArrays(GL_POLYGON, 32, 4);
+
+	// down headlight
+	codCol = 5;
+	glUniform1i(codColLocation, codCol);
+	glDrawArrays(GL_POLYGON, 36, 4);
+
+	// top rear light
+	codCol = 6;
+	glUniform1i(codColLocation, codCol);
+	glDrawArrays(GL_POLYGON, 40, 4);
+
+	// down rear light
+	glDrawArrays(GL_POLYGON, 44, 4);
+
+
+	// car3
+	myMatrix = resizeMatrix * matrTranslCar3 * matrTranslInitPosCar3 * matrFixRotation3 * matrRotCar3 ;
 	glUniformMatrix4fv(myMatrixLocation, 1, GL_FALSE, &myMatrix[0][0]);
 	codCol = 2;
 	glUniform1i(codColLocation, codCol);
@@ -654,17 +761,6 @@ void RenderFunction(void)
 	// down rear light
 	glDrawArrays(GL_POLYGON, 44, 4);
 
-			//myMatrix = resizeMatrix * matrTransl * matrRot;
-			//glUniformMatrix4fv(myMatrixLocation, 1, GL_FALSE, &myMatrix[0][0]);
-			//// Desenare patrat si punct mobil
-			//codCol = 1;
-			//glUniform1i(codColLocation, codCol);
-			//glDrawArrays(GL_POLYGON, 8, 4);
-			//codCol = 2;
-			//glUniform1i(codColLocation, codCol);
-			//glEnable(GL_POINT_SMOOTH);
-			//glDrawArrays(GL_POINTS, 12, 1);
-			//glDisable(GL_POINT_SMOOTH);
 
 	// GAME OVER message
 	if (isGameLost == true) {
@@ -748,6 +844,7 @@ int main(int argc, char* argv[])
 	Initialize();
 	glutDisplayFunc(RenderFunction);
 	glutIdleFunc(moveCarsByDefault);
+	glutKeyboardFunc(processNormalKeys);
 	glutSpecialFunc(processSpecialKeys);
 	/*glutIdleFunc(RenderFunction);
 	glutKeyboardFunc(processNormalKeys);
